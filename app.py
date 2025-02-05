@@ -33,6 +33,9 @@ class Review(db.Model):
     review_text = db.Column(db.Text, nullable=False)
     sentiment = db.Column(db.Integer, nullable=False)
 
+def update_leaderboard(restaurant_id, sentiment_score):
+    redis_client.zincrby("restaurant_leaderboard", sentiment_score, restaurant_id)
+
 def seed_restaurants():
     if Restaurant.query.count() == 0:
         dummy_data = [
@@ -66,8 +69,21 @@ def add_review():
     new_review = Review(restaurant_id=restaurant_id, review_text=review_text, sentiment=sentiment)
     db.session.add(new_review)
     db.session.commit()
-    
+    update_leaderboard(restaurant_id, sentiment)
     return jsonify({'message': 'Review added successfully', 'sentiment': sentiment}), 201
+
+
+@app.route('/leaderboard', methods=['GET'])
+def get_leaderboard():
+    top_restaurants = redis_client.zrevrange("restaurant_leaderboard", 0, 9, withscores=True)
+    leaderboard = []
+
+    for restaurant_id, score in top_restaurants:
+        restaurant = Restaurant.query.get(int(restaurant_id))
+        if restaurant:
+            leaderboard.append({"restaurant_name": restaurant.name, "score": score})
+
+    return jsonify({"leaderboard": leaderboard})
 
 if __name__ == '__main__':
     app.run(debug=True)
