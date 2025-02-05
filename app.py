@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 from dotenv import load_dotenv
+from redis import Redis
 import os
 load_dotenv()
 nltk.download('vader_lexicon')
@@ -13,6 +14,14 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+redis_client = Redis(
+    host='redis-18856.c124.us-central1-1.gce.redns.redis-cloud.com',
+    port=18856,
+    decode_responses=True,
+    username="default",
+    password=os.getenv("REDIS_PASSWORD"),
+)
 
 class Restaurant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
